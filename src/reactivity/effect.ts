@@ -7,7 +7,7 @@ class ReactiveEffect {
     run() {
         // 如果调用，说明是当前
         activeEffect = this;
-        this._fn()
+        return this._fn()
     }
 }
 const targetMap = new Map();
@@ -48,4 +48,5 @@ let activeEffect;// 当前fn
 export function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run()
+  return _effect.run.bind(_effect)
 }
