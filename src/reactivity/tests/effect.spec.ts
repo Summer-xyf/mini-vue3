@@ -2,7 +2,7 @@ import { reactive } from "../reactive";
 import { effect } from "../effect";
 describe("effects", () => {
 
-    it.skip("happy path", () => {// skip 拆分，分步走测试
+    it("happy path", () => {//.skip 拆分，分步走测试
         // 创建响应式对象
         const user = reactive({
             age: 10

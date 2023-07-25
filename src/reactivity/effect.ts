@@ -34,7 +34,11 @@ export function track(target, key) {
 }
 
 export function trigger(target, key) {
-    
+    let depsMap = targetMap.get(target)
+    let dep = depsMap.get(key)
+    for (const effect of dep) {
+        effect.run()
+    }
 }
 let activeEffect;// 当前fn
 /**
