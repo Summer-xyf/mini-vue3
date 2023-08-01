@@ -8,7 +8,7 @@ describe("effects", () => {
             age: 10
         })
 
-        let nextAge; 
+        let nextAge;
         effect(() => {
             nextAge = user.age + 1;
         })
@@ -31,5 +31,32 @@ describe("effects", () => {
         const r = runner()
         expect(foo).toBe(12)
         expect(r).toBe("foo")
+    })
+
+    it('scheduler', () => {
+        // 1.通过effect函数第二个参数scheduler给定的 fn
+        // 2.effect第一次执行还会执行fn
+        // 3.当 响应式对象 set update 不会执行fn 而是执行scheduler
+        // 4.如果说 当执行 runner的时候 会再次执行 fn
+        let dummy;
+        let run: any;
+        const scheduler = jest.fn(() => {
+            run = runner;
+        })
+        const obj = reactive({ foo: 1 })
+        const runner = effect(
+            () => {
+                dummy = obj.foo
+            },
+            { scheduler }
+        )
+        expect(scheduler).not.toHaveBeenCalled();
+        expect(dummy).toBe(1);
+        obj.foo++;
+        expect(scheduler).toHaveBeenCalledTimes(1);
+        expect(dummy).toBe(1);
+
+        run();
+        expect(dummy).toBe(2);
     })
 })
