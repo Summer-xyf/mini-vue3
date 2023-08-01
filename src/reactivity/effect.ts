@@ -1,14 +1,37 @@
+import { extend } from "../shared";
+
 // 抽离概念 ReactiveEffect类
 class ReactiveEffect {
     private _fn;
-    constructor(fn, public scheduler?) {
+    deps = [];
+    active = true;
+    onStop?: () => void;
+    public scheduler: Function | undefined
+    constructor(fn, scheduler?: Function) {
         this._fn = fn;
+        this.scheduler = scheduler
     }
     run() {
         // 如果调用，说明是当前
         activeEffect = this;
         return this._fn()
     }
+    stop() {
+        if (this.active) {
+            cleanupEffect(this);
+            if (this.onStop) {
+                this.onStop();
+            }
+            this.active = false;
+        }
+
+    }
+}
+
+function cleanupEffect(effect) {
+    effect.deps.forEach((dep: any) => {
+        dep.delete(effect)
+    })
 }
 const targetMap = new Map();
 /**
@@ -29,7 +52,12 @@ export function track(target, key) {
         dep = new Set();
         depsMap.set(key, dep);
     }
-    dep.add(activeEffect)
+
+    // activeEffect 只在effect里，所以单纯的reactive会出现undefined的可能
+    if(!activeEffect) return;
+
+    dep.add(activeEffect);
+    activeEffect.deps.push(dep)
     // const dep = new Set();
 }
 
@@ -37,12 +65,12 @@ export function trigger(target, key) {
     let depsMap = targetMap.get(target)
     let dep = depsMap.get(key)
     for (const effect of dep) {
-        if(effect.scheduler) {
+        if (effect.scheduler) {
             effect.scheduler()
-        }else {
+        } else {
             effect.run()
         }
-        
+
     }
 }
 let activeEffect;// 当前fn
@@ -51,8 +79,19 @@ let activeEffect;// 当前fn
  * @param fn 
  */
 export function effect(fn, options: any = {}) {
-    const scheduler = options.scheduler
-    const _effect = new ReactiveEffect(fn, scheduler);
+    // fn
+    const _effect = new ReactiveEffect(fn, options.scheduler);
+    // options
+    
+    // Object.assign(_effect, options);
+    // extend
+    extend(_effect, options);
     _effect.run()
-    return _effect.run.bind(_effect)
+    const runner: any = _effect.run.bind(_effect)
+    runner.effect = _effect
+    return runner;
+}
+
+export function stop(runner) {
+    runner.effect.stop()
 }
